@@ -1,0 +1,205 @@
+---
+title: "Trabajo Práctico Integrador - Bioestadística (16.43)"
+subtitle: "Análisis del dataset GBSG2: cáncer de mama"
+author: "Santiago, Kiwi y Tobi"
+date: "`r format(Sys.Date(), '%d/%m/%Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+# Opciones globales para todos los chunks del documento.
+# echo = TRUE   -> muestra el código en el HTML
+# warning/message = FALSE -> no ensucia el informe con mensajes de las librerías
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Introducción
+
+## Descripción del problema
+
+<!-- TODO: Breve descripción del problema clínico. 
+     Cáncer de mama, factores pronósticos, relevancia del tema. -->
+
+## Dataset y fuente
+
+El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study Group),
+incluido en el paquete `TH.data` de R. Contiene 686 pacientes con cáncer de mama
+y seguimiento temporal.
+
+## Objetivos
+
+<!-- TODO: Objetivo general y objetivos específicos. -->
+
+## Pregunta de investigación (PICO)
+
+<!-- TODO: Completar el marco PICO.
+     P (Paciente/problema): pacientes con cáncer de mama
+     I (Intervención/exposición): terapia hormonal (horTh)
+     C (Comparación): ausencia de terapia hormonal
+     O (Outcome): recaída/evento (cens)
+-->
+
+---
+
+# Materiales y métodos
+
+## Carga de librerías
+
+```{r librerias}
+# Antes de correr este documento, instalar las librerías UNA SOLA VEZ:
+# install.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data"))
+
+# Manipulación de datos y gráficos (visto en clase: 7/4 en adelante)
+library(tidyverse)
+
+# Estadística descriptiva detallada - stat.desc (visto en clase: 2/6)
+library(pastecs)
+
+# Matriz de correlación visual / heatmap (visto en clase: 2/6)
+library(corrplot)
+
+# Test de Levene para homocedasticidad (visto en clase: 21/4)
+library(car)
+
+# Contiene el dataset GBSG2
+library(TH.data)
+```
+
+## Carga del dataset
+
+```{r carga-datos}
+# NOTA DE MÉTODO: a diferencia de las clases, NO usamos setwd() con una ruta
+# absoluta (D:/Documentos/...), porque esa ruta solo existe en una computadora.
+# Como trabajamos con un Proyecto de RStudio + GitHub (colaborativo), el
+# directorio de trabajo ya queda fijado en la raíz del proyecto automáticamente.
+# El GBSG2 además viene dentro del paquete, así que se carga con data().
+
+data("GBSG2")
+datos <- GBSG2
+```
+
+## Exploración inicial de los datos
+
+```{r exploracion}
+str(datos)       # estructura: tipos de cada variable
+dim(datos)       # filas (pacientes) y columnas (variables)
+head(datos)      # primeras filas
+summary(datos)   # resumen estadístico por variable
+```
+
+```{r faltantes}
+# Verificar datos faltantes (como en clase: colSums(is.na(...)))
+colSums(is.na(datos))
+```
+
+## Diseño del estudio
+
+<!-- TODO: Tipo de diseño (cohorte retrospectivo / observacional).
+     Responde a la Pregunta 1 de la matriz del final. -->
+
+## Marco temporal
+
+<!-- TODO: Período de seguimiento. -->
+
+## Participantes (criterios de inclusión y exclusión)
+
+<!-- TODO: Definir criterios. -->
+
+## Variables
+
+<!-- TODO: Identificar y clasificar cada variable según ROL (respuesta/explicatoria),
+     TIPO (continua/categórica/ordinal) y DISTRIBUCIÓN.
+     Responde a la Pregunta 3 de la matriz del final.
+
+     Referencia de las variables del GBSG2:
+     - horTh    : terapia hormonal (sí/no)      -> categórica
+     - age      : edad (años)                   -> continua
+     - menostat : estado menopáusico (pre/post) -> categórica
+     - tsize    : tamaño tumoral (mm)           -> continua
+     - tgrade   : grado tumoral (I/II/III)      -> categórica ordinal
+     - pnodes   : ganglios positivos            -> continua (conteo)
+     - progrec  : receptores progesterona       -> continua
+     - estrec   : receptores estrógeno          -> continua
+     - time     : tiempo libre de recaída (días)-> continua
+     - cens     : evento (1=recaída, 0=censura) -> VARIABLE RESPUESTA (binaria)
+-->
+
+## Posibles sesgos
+
+<!-- TODO: Sesgos de selección, confusión, pérdida de seguimiento.
+     Responde a la Pregunta 2 de la matriz del final. -->
+
+## Tamaño muestral y poder
+
+<!-- TODO: Cálculo del tamaño muestral ideal y poder de la muestra. -->
+
+## Métodos estadísticos
+
+<!-- TODO: Describir los métodos a usar:
+     - Descriptiva: summary, stat.desc, histogramas, boxplots
+     - Normalidad: Shapiro-Wilk, Q-Q plot
+     - Univariado: t-test / Wilcoxon (continuas), chi² / Fisher (categóricas)
+     - Multivariado: regresión logística (glm, family = binomial), Odds Ratio
+-->
+
+---
+
+# Resultados
+
+## Análisis descriptivo
+
+<!-- TODO: Estadística descriptiva de todas las variables.
+     Tablas (stat.desc), histogramas, boxplots, matriz de correlación. -->
+
+## Análisis univariado
+
+<!-- TODO: Diferencias en las variables explicatorias según el outcome (cens).
+     Responde a la Pregunta 4 de la matriz del final. -->
+
+## Análisis multivariado (regresión logística)
+
+<!-- TODO: Modelo logístico saturado sobre cens, verificación de supuestos,
+     variables dummy, Odds Ratio, interpretación.
+     Responde a las Preguntas 5 y 6 de la matriz del final. -->
+
+<!-- =========================================================
+     SECCIÓN OPCIONAL (a evaluar al final): Análisis de supervivencia
+     Kaplan-Meier, Log-Rank y Cox usando time + cens.
+     Requiere las librerías survival y survminer.
+     ========================================================= -->
+
+---
+
+# Conclusión
+
+<!-- TODO: Resumen de resultados, respuesta a la pregunta PICO, gráficos clave.
+     Responde a la Pregunta 7 de la matriz del final. -->
+
+---
+
+# Referencias bibliográficas
+
+```{r citas, eval=FALSE}
+# Para citar R y los paquetes (muy importante según la clase del 12/5):
+citation()
+citation("tidyverse")
+version$version.string
+```
+
+<!-- TODO: Listar referencias del dataset, paquetes y bibliografía consultada. -->
+
+## Información de la sesión
+
+```{r session-info}
+# Documenta las versiones de R y de todos los paquetes usados.
+# Sirve para reproducibilidad: deja registro del entorno exacto
+# con el que se generaron estos resultados.
+sessionInfo()
+```
