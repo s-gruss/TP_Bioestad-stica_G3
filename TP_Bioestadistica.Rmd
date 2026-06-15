@@ -24,14 +24,14 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ## Descripción del problema
 
+```{=html}
 <!-- TODO: Breve descripción del problema clínico. 
      Cáncer de mama, factores pronósticos, relevancia del tema. -->
+```
 
 ## Dataset y fuente
 
-El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study Group),
-incluido en el paquete `TH.data` de R. Contiene 686 pacientes con cáncer de mama
-y seguimiento temporal.
+El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study Group), incluido en el paquete `TH.data` de R. Contiene 686 pacientes con cáncer de mama y seguimiento temporal.
 
 ## Objetivos
 
@@ -39,47 +39,36 @@ y seguimiento temporal.
 
 ## Pregunta de investigación (PICO)
 
+```{=html}
 <!-- TODO: Completar el marco PICO.
      P (Paciente/problema): pacientes con cáncer de mama
      I (Intervención/exposición): terapia hormonal (horTh)
      C (Comparación): ausencia de terapia hormonal
      O (Outcome): recaída/evento (cens)
 -->
+```
 
----
+------------------------------------------------------------------------
 
 # Materiales y métodos
 
 ## Carga de librerías
 
 ```{r librerias}
-# Antes de correr este documento, instalar las librerías UNA SOLA VEZ:
-# install.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data"))
+# Es necesario instalar las siguientes librerías:
+#install.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data"))
 
-# Manipulación de datos y gráficos (visto en clase: 7/4 en adelante)
 library(tidyverse)
-
-# Estadística descriptiva detallada - stat.desc (visto en clase: 2/6)
 library(pastecs)
-
-# Matriz de correlación visual / heatmap (visto en clase: 2/6)
 library(corrplot)
-
-# Test de Levene para homocedasticidad (visto en clase: 21/4)
 library(car)
-
-# Contiene el dataset GBSG2
 library(TH.data)
 ```
 
 ## Carga del dataset
 
 ```{r carga-datos}
-# NOTA DE MÉTODO: a diferencia de las clases, NO usamos setwd() con una ruta
-# absoluta (D:/Documentos/...), porque esa ruta solo existe en una computadora.
-# Como trabajamos con un Proyecto de RStudio + GitHub (colaborativo), el
-# directorio de trabajo ya queda fijado en la raíz del proyecto automáticamente.
-# El GBSG2 además viene dentro del paquete, así que se carga con data().
+# El GBSG2 viene dentro del paquete "TH.data". Los datos se cargan con data().
 
 data("GBSG2")
 datos <- GBSG2
@@ -87,22 +76,143 @@ datos <- GBSG2
 
 ## Exploración inicial de los datos
 
-```{r exploracion}
-str(datos)       # estructura: tipos de cada variable
-dim(datos)       # filas (pacientes) y columnas (variables)
-head(datos)      # primeras filas
-summary(datos)   # resumen estadístico por variable
+Antes de describir la muestra se verificó la **calidad de los datos**. El dataset no presenta valores faltantes en ninguna de sus variables, y la totalidad de las 686 filas están completas. Tampoco se detectaron registros duplicados. Por lo tanto, no fue necesario aplicar procedimientos de imputación ni de eliminación de casos, y se trabaja con la totalidad de las observaciones.
+
+```{r exploracion-calidad}
+colSums(is.na(datos))
+
+sum(complete.cases(datos))   # cuántas filas no tienen ningún NA
+nrow(datos)                  # total de filas, para comparar
+sum(duplicated(datos))       # cuántas filas están repetidas
 ```
 
-```{r faltantes}
-# Verificar datos faltantes (como en clase: colSums(is.na(...)))
-colSums(is.na(datos))
+```{r exploracion-general}
+dim(datos)        # cuántas filas (pacientes) y columnas (variables)
+str(datos)        # estructura: tipo de cada variable
+head(datos)       # primeras 6 filas, para "ver" los datos reales
+colnames(datos)   # nombres de las variables
+summary(datos)    # resumen estadístico variable por variable
 ```
+
+El dataset **GBSG2** (German Breast Cancer Study Group, 1984–1989) contiene 686 pacientes con cáncer de mama primario y 10 variables. A continuación se describe cada una:
+
+-   **`horTh`**: terapia hormonal recibida. Variable categórica binaria (`no` / `yes`).
+-   **`age`**: edad de la paciente al ingreso, en años. Variable continua.
+-   **`menostat`**: estado menopáusico. Variable categórica binaria (`Pre` premenopáusica / `Post` posmenopáusica).
+-   **`tsize`**: tamaño del tumor, en milímetros. Variable continua.
+-   **`tgrade`**: grado histológico del tumor. Variable categórica ordinal (`I` \< `II` \< `III`), donde mayor grado indica células más anormales y peor pronóstico.
+-   **`pnodes`**: número de ganglios linfáticos positivos (con células tumorales). Variable continua de conteo.
+-   **`progrec`**: nivel de receptores de progesterona, en fmol. Variable continua.
+-   **`estrec`**: nivel de receptores de estrógeno, en fmol. Variable continua.
+-   **`time`**: tiempo de seguimiento libre de recaída, en días. Variable continua.
+-   **`cens`**: indicador del evento. Variable binaria (`1` = ocurrió recaída/muerte, `0` = observación censurada, es decir, la paciente terminó el seguimiento sin el evento).
+
+El resumen estadístico permite caracterizar la muestra. Las variables **categóricas** se distribuyen de la siguiente manera: 440 pacientes no recibieron terapia hormonal (`horTh = no`) frente a 246 que sí (`yes`); 290 son premenopáusicas y 396 posmenopáusicas; y según el grado tumoral, predomina ampliamente el grado II (444 pacientes), seguido del III (161) y del I (81).
+
+Para las variables **continuas**, los principales estadísticos son:
+
+| Variable          | Mínimo | 1er Cuartil | Mediana | Media  | 3er Cuartil | Máximo |
+|-------------------|--------|-------------|---------|--------|-------------|--------|
+| `age` (años)      | 21     | 46          | 53      | 53,05  | 61          | 80     |
+| `tsize` (mm)      | 3      | 20          | 25      | 29,33  | 35          | 120    |
+| `pnodes` (conteo) | 1      | 1           | 3       | 5,01   | 7           | 51     |
+| `progrec` (fmol)  | 0      | 7           | 32,5    | 110,0  | 131,8       | 2380   |
+| `estrec` (fmol)   | 0      | 8           | 36      | 96,25  | 114         | 1144   |
+| `time` (días)     | 8      | 567,8       | 1084    | 1124,5 | 1684,8      | 2659   |
+
+De este resumen se desprenden varias observaciones relevantes:
+
+-   La **edad** se concentra en la mediana edad (mediana 53 años), con media y mediana muy próximas, lo que sugiere una distribución aproximadamente simétrica.
+-   En **`tsize`**, **`pnodes`**, **`progrec`** y **`estrec`** la media supera claramente a la mediana, lo que indica distribuciones **asimétricas a la derecha** (sesgo positivo): la mayoría de los valores son bajos, pero unos pocos casos extremos elevan la media. Por ejemplo, en `pnodes` la mediana es 3 pero el máximo llega a 51 ganglios.
+-   Los receptores hormonales (**`progrec`** y **`estrec`**) presentan un mínimo de 0, lo que es clínicamente plausible (pacientes sin receptores detectables).
+-   La variable respuesta **`cens`** tiene media 0,4359, lo que significa que aproximadamente el **43,6 % de las pacientes presentó el evento** (recaída/muerte) durante el seguimiento, frente a un 56,4 % de observaciones censuradas.
+
+```{r histogramas-continuas, fig.width=10, fig.height=6}
+# Histogramas de las variables continuas
+par(mfrow = c(2, 3))   # 2 filas x 3 columnas
+
+hist(datos$age,     main = "Edad",                 xlab = "Años")
+hist(datos$tsize,   main = "Tamaño tumoral",       xlab = "mm")
+hist(datos$pnodes,  main = "Ganglios positivos",   xlab = "Cantidad")
+hist(datos$progrec, main = "Receptores progesterona", xlab = "fmol")
+hist(datos$estrec,  main = "Receptores estrógeno", xlab = "fmol")
+hist(datos$time,    main = "Tiempo de seguimiento", xlab = "Días")
+
+par(mfrow = c(1, 1))   # vuelve la ventana gráfica a la normalidad
+```
+
+```{r normalidad-continuas, fig.width=10, fig.height=6}
+# Q-Q plots: comparan los datos contra una distribución normal teórica
+par(mfrow = c(2, 3))
+
+qqnorm(datos$age,     main = "Edad");                qqline(datos$age)
+qqnorm(datos$tsize,   main = "Tamaño tumoral");      qqline(datos$tsize)
+qqnorm(datos$pnodes,  main = "Ganglios positivos");  qqline(datos$pnodes)
+qqnorm(datos$progrec, main = "Rec. progesterona");   qqline(datos$progrec)
+qqnorm(datos$estrec,  main = "Rec. estrógeno");      qqline(datos$estrec)
+qqnorm(datos$time,    main = "Tiempo seguimiento");  qqline(datos$time)
+
+par(mfrow = c(1, 1))
+```
+
+```{r shapiro-continuas}
+# Test de Shapiro-Wilk para cada variable continua
+# H0: los datos siguen una distribución normal
+# Si p < 0.05, se rechaza la normalidad
+shapiro.test(datos$age)
+shapiro.test(datos$tsize)
+shapiro.test(datos$pnodes)
+shapiro.test(datos$progrec)
+shapiro.test(datos$estrec)
+shapiro.test(datos$time)
+```
+
+```{r categoricas-frecuencias}
+# Tablas de frecuencia absoluta y relativa
+
+# Terapia hormonal
+table(datos$horTh)
+round(prop.table(table(datos$horTh)), 3)
+
+# Estado menopáusico
+table(datos$menostat)
+round(prop.table(table(datos$menostat)), 3)
+
+# Grado tumoral
+table(datos$tgrade)
+round(prop.table(table(datos$tgrade)), 3)
+
+# Variable respuesta: evento
+table(datos$cens)
+round(prop.table(table(datos$cens)), 3)
+```
+
+```{r categoricas-barplot, fig.width=10, fig.height=6}
+# Gráficos de barras para las categóricas
+par(mfrow = c(2, 2))
+barplot(table(datos$horTh),    main = "Terapia hormonal",  col = "steelblue")
+barplot(table(datos$menostat), main = "Estado menopáusico", col = "steelblue")
+barplot(table(datos$tgrade),   main = "Grado tumoral",     col = "steelblue")
+barplot(table(datos$cens),     main = "Evento (cens)",     col = "steelblue")
+par(mfrow = c(1, 1))
+```
+
+### Síntesis de la exploración de variables
+
+**Variables continuas.** El análisis combinado de histogramas, gráficos Q-Q y el test de Shapiro-Wilk permite evaluar la normalidad de cada variable. La **edad** es la única que se aproxima a una distribución normal: presenta forma acampanada, sus puntos siguen la diagonal en el Q-Q plot y su estadístico de Shapiro es muy alto (W = 0,99). Si bien el test arroja un p-valor significativo (p \< 0,05), con un tamaño muestral de 686 observaciones, el test de Shapiro-Wilk es altamente sensible y tiende a rechazar la normalidad ante desviaciones mínimas, por lo que se prioriza la evidencia visual.
+
+En contraste, las variables **`tsize`, `pnodes`, `progrec` y `estrec`** presentan una marcada **asimetría positiva** (cola hacia la derecha): la mayoría de los valores se concentran en el extremo inferior y unos pocos casos extremos elevan la media por encima de la mediana. Esto se confirma tanto en los histogramas como en los Q-Q plots (clara curvatura) y en valores de W bajos (entre 0,54 y 0,71), con p \< 2,2e-16. La variable **`time`** también se aparta de la normalidad, aunque de forma más leve.
+
+**Variables categóricas.** La muestra incluye 440 pacientes sin terapia hormonal (64,1 %) y 246 con ella (35,9 %); 290 premenopáusicas (42,3 %) y 396 posmenopáusicas (57,7 %). El grado tumoral está dominado por el grado II (64,7 %), seguido del III (23,5 %) y el I (11,8 %). La variable respuesta `cens` muestra 387 observaciones censuradas (56,4 %) frente a 299 eventos (43,6 %).
+
+**Implicancia para el análisis.** Dado que la mayoría de las variables continuas no cumplen el supuesto de normalidad, en el análisis univariado se privilegiarán **pruebas no paramétricas** (test de Wilcoxon-Mann-Whitney) para comparar estas variables entre los grupos del outcome, reservando las pruebas paramétricas (test t) únicamente para los casos donde el supuesto sea razonable, como la edad.
 
 ## Diseño del estudio
 
+```{=html}
 <!-- TODO: Tipo de diseño (cohorte retrospectivo / observacional).
      Responde a la Pregunta 1 de la matriz del final. -->
+```
 
 ## Marco temporal
 
@@ -114,6 +224,7 @@ colSums(is.na(datos))
 
 ## Variables
 
+```{=html}
 <!-- TODO: Identificar y clasificar cada variable según ROL (respuesta/explicatoria),
      TIPO (continua/categórica/ordinal) y DISTRIBUCIÓN.
      Responde a la Pregunta 3 de la matriz del final.
@@ -130,11 +241,14 @@ colSums(is.na(datos))
      - time     : tiempo libre de recaída (días)-> continua
      - cens     : evento (1=recaída, 0=censura) -> VARIABLE RESPUESTA (binaria)
 -->
+```
 
 ## Posibles sesgos
 
+```{=html}
 <!-- TODO: Sesgos de selección, confusión, pérdida de seguimiento.
      Responde a la Pregunta 2 de la matriz del final. -->
+```
 
 ## Tamaño muestral y poder
 
@@ -142,47 +256,59 @@ colSums(is.na(datos))
 
 ## Métodos estadísticos
 
+```{=html}
 <!-- TODO: Describir los métodos a usar:
      - Descriptiva: summary, stat.desc, histogramas, boxplots
      - Normalidad: Shapiro-Wilk, Q-Q plot
      - Univariado: t-test / Wilcoxon (continuas), chi² / Fisher (categóricas)
      - Multivariado: regresión logística (glm, family = binomial), Odds Ratio
 -->
+```
 
----
+------------------------------------------------------------------------
 
 # Resultados
 
 ## Análisis descriptivo
 
+```{=html}
 <!-- TODO: Estadística descriptiva de todas las variables.
      Tablas (stat.desc), histogramas, boxplots, matriz de correlación. -->
+```
 
 ## Análisis univariado
 
+```{=html}
 <!-- TODO: Diferencias en las variables explicatorias según el outcome (cens).
      Responde a la Pregunta 4 de la matriz del final. -->
+```
 
 ## Análisis multivariado (regresión logística)
 
+```{=html}
 <!-- TODO: Modelo logístico saturado sobre cens, verificación de supuestos,
      variables dummy, Odds Ratio, interpretación.
      Responde a las Preguntas 5 y 6 de la matriz del final. -->
+```
 
+```{=html}
 <!-- =========================================================
      SECCIÓN OPCIONAL (a evaluar al final): Análisis de supervivencia
      Kaplan-Meier, Log-Rank y Cox usando time + cens.
      Requiere las librerías survival y survminer.
      ========================================================= -->
+```
 
----
+------------------------------------------------------------------------
 
 # Conclusión
 
+```{=html}
 <!-- TODO: Resumen de resultados, respuesta a la pregunta PICO, gráficos clave.
      Responde a la Pregunta 7 de la matriz del final. -->
+```
 
----
+------------------------------------------------------------------------
 
 # Referencias bibliográficas
 
