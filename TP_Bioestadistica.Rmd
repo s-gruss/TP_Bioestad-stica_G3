@@ -209,18 +209,48 @@ En contraste, las variables **`tsize`, `pnodes`, `progrec` y `estrec`** presenta
 
 ## Diseño del estudio
 
-```{=html}
-<!-- TODO: Tipo de diseño (cohorte retrospectivo / observacional).
-     Responde a la Pregunta 1 de la matriz del final. -->
-```
+El presente trabajo corresponde a un **estudio observacional de cohorte retrospectivo**. Se analizan datos recopilados del *German Breast Cancer Study Group* (GBSG2), un registro multicéntrico alemán de pacientes con cáncer de mama primario. La exposición de interés es la recepción (o no) de terapia hormonal adyuvante (`horTh`), y el desenlace evaluado es la presencia de recaída o muerte durante el período de seguimiento (`cens`).
+
+Al tratarse de un diseño retrospectivo, los datos ya existían al momento del análisis: no se realizó ninguna asignación aleatoria de tratamientos ni intervención sobre las pacientes. Esto implica que los grupos comparados (con y sin terapia hormonal) pueden diferir en características basales, lo que debe ser considerado al interpretar las asociaciones encontradas.
 
 ## Marco temporal
 
-<!-- TODO: Período de seguimiento. -->
+El reclutamiento de pacientes tuvo lugar entre **1984 y 1989** en centros oncológicos de Alemania, en el marco del estudio GBSG2. Es importante tener en consideración el período temporal dado que define el contexto clínico (no es lo mismo los criterios y tratamientos en 1984 que en la actualidad).
+
+El seguimiento de cada paciente se extiende hasta la ocurrencia del evento (recaída o muerte) o hasta la fecha de cierre del estudio, con tiempos que van de 8 a 2659 días (mediana: 1084 días, aproximadamente 3 años).
 
 ## Participantes (criterios de inclusión y exclusión)
 
-<!-- TODO: Definir criterios. -->
+```{r participantes-evidencia}
+# ¿Cuántas pacientes tiene la muestra?
+cat("Total de pacientes:", nrow(datos), "\n")
+
+# ¿Todas tienen al menos 1 ganglio positivo?
+# Si min(pnodes) = 1, no existe ninguna con 0 ganglios → criterio de inclusión implícito
+cat("Mínimo de pnodes:", min(datos$pnodes), "\n")
+cat("Máximo de pnodes:", max(datos$pnodes), "\n")
+
+# ¿Hay datos faltantes o duplicados? (ya calculado en exploracion-calidad)
+cat("Filas completas (sin NA):", sum(complete.cases(datos)), "\n")
+cat("Filas duplicadas:", sum(duplicated(datos)), "\n")
+
+# Tamaño de cada grupo de exposición
+cat("\nDistribución por terapia hormonal:\n")
+print(table(datos$horTh))
+print(round(prop.table(table(datos$horTh)), 3))
+```
+
+**Criterios de inclusión:**
+
+-   Diagnóstico confirmado de cáncer de mama primario.
+-   Presencia de al menos un ganglio linfático positivo (`pnodes` ≥ 1), lo que define a una población de mayor riesgo oncológico.
+-   Información completa en todas las variables relevantes para el análisis.
+
+**Criterios de exclusión:**
+
+-   El dataset original no documenta criterios de exclusión explícitos. Sin embargo, pacientes con datos faltantes en cualquier variable fueron excluidos en la etapa de control de calidad (ver sección de exploración). En este caso el dataset no presentó valores faltantes, por lo que no se excluyó ninguna observación.
+
+La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no recibieron terapia hormonal y 246 (35,9 %) sí la recibieron.
 
 ## Variables
 
