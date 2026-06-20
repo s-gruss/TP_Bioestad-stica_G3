@@ -56,7 +56,7 @@ El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study G
 
 ```{r librerias}
 # Es necesario instalar las siguientes librerías:
-#install.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data"))
+#ainstall.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data"))
 
 library(tidyverse)
 library(pastecs)
