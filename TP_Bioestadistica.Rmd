@@ -227,7 +227,7 @@ En contraste, las variables **`tsize`, `pnodes`, `progrec` y `estrec`** presenta
 
 ## Diseño del estudio
 
-El dataset GBSG2 proviene de un **ensayo clínico aleatorizado (ECA) multicéntrico** llevado a cabo por el *German Breast Cancer Study Group* (Schumacher et al., 1994). El estudio original tuvo un **diseño factorial 2×2** que evaluaba simultáneamente dos intervenciones en pacientes con cáncer de mama primario con ganglios positivos: la duración de la quimioterapia (tres versus seis ciclos de CMF) y la administración  o no de terapia hormonal adyuvante con tamoxifeno (`horTh`).
+El dataset GBSG2 proviene de un **ensayo clínico aleatorizado (ECA) multicéntrico** llevado a cabo por el *German Breast Cancer Study Group* (Schumacher et al., 1994). El estudio original tuvo un **diseño factorial 2×2** que evaluaba simultáneamente dos intervenciones en pacientes con cáncer de mama primario con ganglios positivos: la duración de la quimioterapia (tres versus seis ciclos de CMF) y la administración o no de terapia hormonal adyuvante con tamoxifeno (`horTh`).
 
 El presente trabajo constituye un **reanálisis** de esos datos, centrado en laasociación entre la terapia hormonal y la recaída o muerte durante el seguimiento (`cens`). Un aspecto clave del diseño es que **la terapia hormonal fue asignada de forma aleatorizada**. Esto fortalece el análisis: la aleatorización tiende a equilibrar las características basales entre los grupos con y sin hormonoterapia, reduciendo el riesgo de que la asociación observada se deba a diferencias sistemáticas previas entre las pacientes (confusión).
 
@@ -287,85 +287,93 @@ La **variable respuesta** es `cens`, de naturaleza binaria, lo que determina el 
 
 Aunque el diseño aleatorizado del estudio protege la comparación principal, existen consideraciones de sesgo que conviene tener presentes al interpretar los resultados.
 
-**Confusión.** Gracias a la aleatorización de la terapia hormonal, el riesgo de 
-confusión sobre la relación principal (hormonoterapia → recaída) está 
-considerablemente reducido: se espera que las covariables basales (edad, estado 
-menopáusico, tamaño tumoral, etc.) se distribuyan de forma equilibrada entre los 
-grupos con y sin tratamiento. No obstante, dado que el modelo multivariado también 
-incorpora otras covariables pronósticas que **no** fueron aleatorizadas, la 
-evaluación de confusión y modificación de efecto sigue siendo pertinente para 
-esas variables.
+**Confusión.** Gracias a la aleatorización de la terapia hormonal, el riesgo de confusión sobre la relación principal (hormonoterapia → recaída) está considerablemente reducido: se espera que las covariables basales (edad, estado menopáusico, tamaño tumoral, etc.) se distribuyan de forma equilibrada entre los grupos con y sin tratamiento. No obstante, dado que el modelo multivariado también incorpora otras covariables pronósticas que **no** fueron aleatorizadas, la evaluación de confusión y modificación de efecto sigue siendo pertinente para esas variables.
 
-**Sesgo de selección.** La muestra proviene de centros oncológicos específicos de 
-Alemania (1984–1989) e incluye únicamente pacientes con ganglios positivos. Esto 
-limita la representatividad: los resultados podrían no extrapolarse directamente a 
-pacientes sin compromiso ganglionar, de otras regiones o de épocas con criterios 
-diagnósticos y terapéuticos distintos.
+**Sesgo de selección.** La muestra proviene de centros oncológicos específicos de Alemania (1984–1989) e incluye únicamente pacientes con ganglios positivos. Esto limita la representatividad: los resultados podrían no extrapolarse directamente a pacientes sin compromiso ganglionar, de otras regiones o de épocas con criterios diagnósticos y terapéuticos distintos.
 
-**Sesgo de información / pérdida de seguimiento.** En estudios con seguimiento 
-temporal existe la posibilidad de que algunas pacientes abandonen o se pierdan 
-antes de completar la observación. En este dataset, esos casos se reflejan como 
-observaciones **censuradas** (`cens = 0`). Si la pérdida de seguimiento estuviera 
-relacionada con el pronóstico, podría introducir sesgo; el análisis asume que la 
-censura es no informativa (independiente del riesgo de recaída).
+**Sesgo de información / pérdida de seguimiento.** En estudios con seguimiento temporal existe la posibilidad de que algunas pacientes abandonen o se pierdan antes de completar la observación. En este dataset, esos casos se reflejan como observaciones **censuradas** (`cens = 0`). Si la pérdida de seguimiento estuviera relacionada con el pronóstico, podría introducir sesgo; el análisis asume que la censura es no informativa (independiente del riesgo de recaída).
 
 ## Tamaño muestral y poder
 
 El tamaño muestral de este trabajo está determinado por el estudio original: se analizan las 686 pacientes incluidas en el dataset GBSG2. Al tratarse de un reanálisis de datos preexistentes, no corresponde un cálculo de tamaño muestral a priori, sino valorar si la muestra disponible ofrece poder estadístico suficiente para el análisis propuesto.
 
-De hecho, el ensayo original fue dimensionado para detectar diferencias 
-clínicamente relevantes entre los grupos de tratamiento, por lo que la muestra parte de una base sólida. Para el análisis del presente trabajo, varias  condiciones resultan favorables:
+De hecho, el ensayo original fue dimensionado para detectar diferencias clínicamente relevantes entre los grupos de tratamiento, por lo que la muestra parte de una base sólida. Para el análisis del presente trabajo, varias condiciones resultan favorables:
 
-- **Tamaño amplio:** 686 observaciones es un número considerable para un modelo de regresión logística.
-- **Buen balance del desenlace:** 299 eventos (43,6 %) frente a 387 censuras (56,4 %). El balance entre ambas categorías de la variable respuesta favorece la estabilidad y el poder del modelo, a diferencia de lo que ocurriría con un evento muy raro.
-- **Regla práctica de eventos por variable (EPV):** una guía habitual en regresión logística sugiere disponer de al menos 10 eventos por cada variable predictora incluida en el modelo. Con 299 eventos, el modelo puede incorporar holgadamente las covariables disponibles sin riesgo de sobreajuste por este criterio.
+-   **Tamaño amplio:** 686 observaciones es un número considerable para un modelo de regresión logística.
+-   **Buen balance del desenlace:** 299 eventos (43,6 %) frente a 387 censuras (56,4 %). El balance entre ambas categorías de la variable respuesta favorece la estabilidad y el poder del modelo, a diferencia de lo que ocurriría con un evento muy raro.
+-   **Regla práctica de eventos por variable (EPV):** una guía habitual en regresión logística sugiere disponer de al menos 10 eventos por cada variable predictora incluida en el modelo. Con 299 eventos, el modelo puede incorporar holgadamente las covariables disponibles sin riesgo de sobreajuste por este criterio.
 
 En conjunto, el tamaño y la composición de la muestra resultan adecuados para estimar con razonable precisión la asociación entre la terapia hormonal y la recaída.
 
-
 ## Métodos estadísticos
 
-El análisis se desarrolló en R (ver versión y paquetes en la sección de 
-información de la sesión) y se organizó en tres etapas.
+El análisis se desarrolló en R (ver versión y paquetes en la sección de información de la sesión) y se organizó en tres etapas.
 
-**Análisis descriptivo.** Se caracterizó la muestra mediante estadísticos de resumen (media, mediana, cuartiles, mínimo y máximo) para las variables continuas, y tablas de frecuencia absoluta y relativa para las categóricas. La normalidad de las variables continuas se evaluó combinando inspección visual (histogramas y  gráficos Q-Q) con el test de **Shapiro-Wilk**, interpretado con cautela dado eltamaño muestral.
+**Análisis descriptivo.** Se caracterizó la muestra mediante estadísticos de resumen (media, mediana, cuartiles, mínimo y máximo) para las variables continuas, y tablas de frecuencia absoluta y relativa para las categóricas. La normalidad de las variables continuas se evaluó combinando inspección visual (histogramas y gráficos Q-Q) con el test de **Shapiro-Wilk**, interpretado con cautela dado eltamaño muestral.
 
 **Análisis univariado.** Se compararon las variables explicatorias entre los grupos definidos por el desenlace (`cens`). La elección de la prueba se basó en el tipo de variable y el cumplimiento del supuesto de normalidad:
 
-- Para variables continuas no normales (la mayoría), se utilizó la prueba no 
-paramétrica de **Wilcoxon-Mann-Whitney**.
-- Para variables continuas con distribución aproximadamente normal (como la edad), 
-se consideró el **test t de Student**.
-- Para variables categóricas, se utilizó la prueba de **chi-cuadrado** (o el test 
-exacto de **Fisher** cuando las frecuencias esperadas fueran bajas).
+-   Para variables continuas no normales (la mayoría), se utilizó la prueba no paramétrica de **Wilcoxon-Mann-Whitney**.
+-   Para variables continuas con distribución aproximadamente normal (como la edad), se consideró el **test t de Student**.
+-   Para variables categóricas, se utilizó la prueba de **chi-cuadrado** (o el test exacto de **Fisher** cuando las frecuencias esperadas fueran bajas).
 
-**Análisis multivariado.** Se ajustó un modelo de **regresión logística** 
-(`glm` con `family = binomial`) para estimar el efecto de la terapia hormonal 
-sobre la probabilidad de recaída, considerando las covariables disponibles. Los 
-resultados se expresan como **Odds Ratios (OR)** con sus intervalos de confianza 
-del 95 %. Se evaluó la presencia de **confusión** y de **modificación de efecto** 
-(interacción) entre la exposición y las covariables.
+**Análisis multivariado.** Se ajustó un modelo de **regresión logística** (`glm` con `family = binomial`) para estimar el efecto de la terapia hormonal sobre la probabilidad de recaída, considerando las covariables disponibles. Los resultados se expresan como **Odds Ratios (OR)** con sus intervalos de confianza del 95 %. Se evaluó la presencia de **confusión** y de **modificación de efecto** (interacción) entre la exposición y las covariables.
 
-En todos los contrastes de hipótesis se adoptó un nivel de significación de 
-**α = 0,05**.
+En todos los contrastes de hipótesis se adoptó un nivel de significación de **α = 0,05**.
 
 ------------------------------------------------------------------------
 
 # Resultados
 
-## Análisis descriptivo
-
-```{=html}
-<!-- TODO: Estadística descriptiva de todas las variables.
-     Tablas (stat.desc), histogramas, boxplots, matriz de correlación. -->
-```
-
 ## Análisis univariado
 
-```{=html}
-<!-- TODO: Diferencias en las variables explicatorias según el outcome (cens).
-     Responde a la Pregunta 4 de la matriz del final. -->
+Como paso previo al análisis univariado, se resumen las variables continuas según el desenlace (`cens`), comparando el grupo sin evento (`cens = 0`) con el 
+grupo que presentó recaída o muerte (`cens = 1`). Se utiliza la mediana como medida de resumen, coherente con la distribución asimétrica de estas variables. Esta comparación permite visualizar posibles diferencias entre grupos, que luego se contrastarán formalmente mediante pruebas de hipótesis.
+
+```{r descriptivo-por-grupo}
+# Comparación de las variables continuas según el outcome (cens)
+# Mediana para las asimétricas; abre el análisis univariado.
+datos %>%
+  group_by(cens) %>%
+  summarise(
+    n              = n(),
+    edad_md        = median(age),
+    tsize_md       = median(tsize),
+    pnodes_md      = median(pnodes),
+    progrec_md     = median(progrec),
+    estrec_md      = median(estrec)
+  )
 ```
+
+Para evaluar la asociación entre cada variable explicatoria y el desenlace (`cens`), se aplicaron pruebas de hipótesis acordes al tipo de variable y a su distribución. Para las variables continuas, dada su no-normalidad, se utilizó la prueba de **Wilcoxon-Mann-Whitney**; para las categóricas, la prueba de **chi-cuadrado**. Se adoptó un nivel de significación de α = 0,05.
+
+```{r univariado-wilcoxon}
+# Wilcoxon-Mann-Whitney: compara cada continua entre los grupos de cens
+# (no paramétrico, elegido por la no-normalidad ya demostrada)
+wilcox.test(age ~ cens,     data = datos)
+wilcox.test(tsize ~ cens,   data = datos)
+wilcox.test(pnodes ~ cens,  data = datos)
+wilcox.test(progrec ~ cens, data = datos)
+wilcox.test(estrec ~ cens,  data = datos)
+```
+
+```{r univariado-chi}
+# Chi-cuadrado: asociación entre cada categórica y el outcome
+chisq.test(table(datos$horTh, datos$cens))
+chisq.test(table(datos$menostat, datos$cens))
+chisq.test(table(datos$tgrade, datos$cens))
+```
+**Variables continuas.** Se hallaron diferencias estadísticamente significativasentre los grupos con y sin evento para el número de ganglios positivos (`pnodes`, p < 0,001), los receptores de progesterona (`progrec`, p < 0,001), los receptores de estrógeno (`estrec`, p = 0,001) y el tamaño tumoral (`tsize`, p = 0,002). En todos los casos, el sentido es clínicamente coherente: las pacientes que recayeron presentaron más ganglios comprometidos y menores niveles de receptores hormonales. En cambio, la edad (`age`, p = 0,686) no mostró 
+asociación con el desenlace.
+
+**Variables categóricas.** El grado tumoral (`tgrade`, p < 0,001) mostró una  fuerte asociación con la recaída. La terapia hormonal (`horTh`, p = 0,041)  también resultó significativa, lo que constituye una primera evidencia a favor de una asociación entre el tratamiento y el desenlace. 
+El estado menopáusico (`menostat`, p = 0,282) no mostró asociación significativa.
+
+En conclusión, el análisis univariado identifica como variables asociadas al 
+desenlace a `pnodes`, `progrec`, `estrec`, `tsize`, `tgrade` y `horTh`. Estas son 
+candidatas naturales a integrar el modelo multivariado. No obstante, estas 
+asociaciones son crudas y no controlan el efecto de las demás variables; el 
+modelo de regresión logística permitirá estimar el efecto ajustado de la terapia hormonal y evaluar la presencia de confusión.
 
 ## Análisis multivariado (regresión logística)
 
