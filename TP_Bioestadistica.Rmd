@@ -327,8 +327,7 @@ En todos los contrastes de hipótesis se adoptó un nivel de significación de *
 
 ## Análisis univariado
 
-Como paso previo al análisis univariado, se resumen las variables continuas según el desenlace (`cens`), comparando el grupo sin evento (`cens = 0`) con el 
-grupo que presentó recaída o muerte (`cens = 1`). Se utiliza la mediana como medida de resumen, coherente con la distribución asimétrica de estas variables. Esta comparación permite visualizar posibles diferencias entre grupos, que luego se contrastarán formalmente mediante pruebas de hipótesis.
+Como paso previo al análisis univariado, se resumen las variables continuas según el desenlace (`cens`), comparando el grupo sin evento (`cens = 0`) con el grupo que presentó recaída o muerte (`cens = 1`). Se utiliza la mediana como medida de resumen, coherente con la distribución asimétrica de estas variables. Esta comparación permite visualizar posibles diferencias entre grupos, que luego se contrastarán formalmente mediante pruebas de hipótesis.
 
 ```{r descriptivo-por-grupo}
 # Comparación de las variables continuas según el outcome (cens)
@@ -363,19 +362,97 @@ chisq.test(table(datos$horTh, datos$cens))
 chisq.test(table(datos$menostat, datos$cens))
 chisq.test(table(datos$tgrade, datos$cens))
 ```
-**Variables continuas.** Se hallaron diferencias estadísticamente significativasentre los grupos con y sin evento para el número de ganglios positivos (`pnodes`, p < 0,001), los receptores de progesterona (`progrec`, p < 0,001), los receptores de estrógeno (`estrec`, p = 0,001) y el tamaño tumoral (`tsize`, p = 0,002). En todos los casos, el sentido es clínicamente coherente: las pacientes que recayeron presentaron más ganglios comprometidos y menores niveles de receptores hormonales. En cambio, la edad (`age`, p = 0,686) no mostró 
-asociación con el desenlace.
 
-**Variables categóricas.** El grado tumoral (`tgrade`, p < 0,001) mostró una  fuerte asociación con la recaída. La terapia hormonal (`horTh`, p = 0,041)  también resultó significativa, lo que constituye una primera evidencia a favor de una asociación entre el tratamiento y el desenlace. 
-El estado menopáusico (`menostat`, p = 0,282) no mostró asociación significativa.
+**Variables continuas.** Se hallaron diferencias estadísticamente significativasentre los grupos con y sin evento para el número de ganglios positivos (`pnodes`, p \< 0,001), los receptores de progesterona (`progrec`, p \< 0,001), los receptores de estrógeno (`estrec`, p = 0,001) y el tamaño tumoral (`tsize`, p = 0,002). En todos los casos, el sentido es clínicamente coherente: las pacientes que recayeron presentaron más ganglios comprometidos y menores niveles de receptores hormonales. En cambio, la edad (`age`, p = 0,686) no mostró asociación con el desenlace.
 
-En conclusión, el análisis univariado identifica como variables asociadas al 
-desenlace a `pnodes`, `progrec`, `estrec`, `tsize`, `tgrade` y `horTh`. Estas son 
-candidatas naturales a integrar el modelo multivariado. No obstante, estas 
-asociaciones son crudas y no controlan el efecto de las demás variables; el 
-modelo de regresión logística permitirá estimar el efecto ajustado de la terapia hormonal y evaluar la presencia de confusión.
+**Variables categóricas.** El grado tumoral (`tgrade`, p \< 0,001) mostró una fuerte asociación con la recaída. La terapia hormonal (`horTh`, p = 0,041) también resultó significativa, lo que constituye una primera evidencia a favor de una asociación entre el tratamiento y el desenlace. El estado menopáusico (`menostat`, p = 0,282) no mostró asociación significativa.
+
+En conclusión, el análisis univariado identifica como variables asociadas al desenlace a `pnodes`, `progrec`, `estrec`, `tsize`, `tgrade` y `horTh`. Estas son candidatas naturales a integrar el modelo multivariado. No obstante, estas asociaciones son crudas y no controlan el efecto de las demás variables; el modelo de regresión logística permitirá estimar el efecto ajustado de la terapia hormonal y evaluar la presencia de confusión.
 
 ## Análisis multivariado (regresión logística)
+
+Como la variable respuesta `cens` es categórica dicotómica, el modelo que corresponde es la **regresión logística**: estima la probabilidad de ocurrencia del evento (recaída/muerte) en función de las variables explicatorias mediante la transformación *logit*. El objetivo es estimar el efecto de la terapia hormonal sobre la probabilidad de recaída, ajustando por las covariables pronósticas.
+
+### Modelo saturado
+
+Partimos de un modelo saturado que incluye la exposición de interés (`horTh`) junto con todas las covariables basales. La variable `time` se excluye de manera deliberada: representa el tiempo de seguimiento del análisis de supervivencia y no un predictor basal del evento, de modo que incorporarla generaría circularidad (junto con `cens` define el desenlace).
+
+```{r modelo-saturado}
+modelo_saturado <- glm(cens ~ horTh + age + menostat + tsize + tgrade +
+                         pnodes + progrec + estrec,
+                       data = datos, family = binomial)
+summary(modelo_saturado)
+```
+
+Como `horTh`, `menostat` y `tgrade` son factores, `glm` genera automáticamente las **variables dummy** tomando la primera categoría como referencia. Por eso en la salida aparecen `horThyes` (referencia `no`), `menostatPost` (referencia `Pre`) y, para el grado tumoral, `tgradeII` y `tgradeIII` (referencia grado `I`). Cada coeficiente compara esa categoría contra su referencia, por lo que no es necesario construir las dummies a mano.
+
+El coeficiente de cada variable es el `ln(OR)`; aplicando `exp()` obtenemos los Odds Ratios, y su intervalo de confianza del 95 % permite aplicar el criterio visto en clase: el OR es estadísticamente significativo cuando su intervalo no incluye al 1.
+
+```{r odds-ratio}
+round(exp(coef(modelo_saturado)), 3)
+round(exp(confint(modelo_saturado)), 3)
+```
+
+Recordando el criterio teórico (OR \< 1 indica factor de protección, OR \> 1 factor de riesgo, siempre que haya significación), los resultados del modelo ajustado son:
+
+-   **`horTh` (terapia hormonal):** OR ≈ 0,65 (IC95 % 0,45–0,92). Recibir terapia hormonal reduce las chances de recaída/muerte respecto a no recibirla, comportándose como factor de protección. Este es el resultado central para nuestra hipótesis y su sentido es el esperado.
+-   **`pnodes` (ganglios positivos):** OR ≈ 1,10 (1,06–1,14). Cada ganglio adicional aumenta alrededor de un 10 % las chances del evento: factor de riesgo, clínicamente coherente.
+-   **`progrec` (receptores de progesterona):** OR ≈ 0,998 (0,996–0,999). Mayores niveles se asocian con menor riesgo: factor de protección (efecto pequeño por unidad pero consistente sobre todo el rango de valores).
+-   **`tgrade` (grado tumoral):** los grados II y III presentan OR \> 1 frente al grado I (≈ 2,18 y ≈ 1,96), de modo que a mayor grado, mayor riesgo.
+-   **`age`, `tsize`, `estrec` y `menostat`** no resultaron significativas en el modelo ajustado, ya que sus intervalos de confianza incluyen al 1.
+
+### Verificación de supuestos
+
+Verificamos los supuestos del modelo con las herramientas vistas en clase. La respuesta es dicotómica con distribución binomial (`cens` toma valores 0/1), lo que se cumple por construcción. Las observaciones son independientes, ya que cada fila corresponde a una paciente distinta sin medidas repetidas. Para descartar multicolinealidad severa entre las predictoras continuas (que inflaría los errores estándar y desestabilizaría los OR) revisamos la matriz de correlación:
+
+```{r supuesto-multicolinealidad, fig.width=7, fig.height=6}
+predictoras <- datos[, c("age", "tsize", "pnodes", "progrec", "estrec")]
+cor_matriz <- cor(predictoras)
+corrplot(cor_matriz, method = "color", type = "upper", addCoef.col = "black",
+         tl.col = "black", tl.srt = 25, number.cex = 0.7)
+```
+
+Las correlaciones entre las predictoras continuas son bajas, por lo que no hay evidencia de multicolinealidad problemática. Finalmente, con 299 eventos y 8 predictoras se cumple holgadamente la regla práctica de aproximadamente 10 eventos por variable, lo que otorga estabilidad a las estimaciones.
+
+### Evaluación de confusión
+
+Para evaluar si alguna covariable **confunde** la relación entre la terapia hormonal y la recaída, comparamos el OR crudo de `horTh` (modelo univariado) con el OR ajustado (modelo multivariado). Un cambio relevante entre ambos (criterio habitual: mayor al 10 %) indicaría confusión.
+
+```{r confusion}
+modelo_crudo <- glm(cens ~ horTh, data = datos, family = binomial)
+round(exp(coef(modelo_crudo))["horThyes"], 3)
+round(exp(coef(modelo_saturado))["horThyes"], 3)
+```
+
+El OR de `horTh` pasa de ≈ 0,71 en el modelo crudo a ≈ 0,65 en el ajustado, una variación cercana al 10 % y de escasa magnitud. Esto es coherente con el hecho de que la terapia hormonal fue asignada de forma aleatorizada en el estudio original: la aleatorización equilibra las características basales entre los grupos, de modo que el efecto estimado apenas se modifica al ajustar por las covariables. No se observa, entonces, confusión sustancial sobre la relación principal.
+
+### Evaluación de modificación de efecto
+
+Para evaluar modificación de efecto (interacción), incorporamos un término de interacción entre la terapia hormonal y el estado menopáusico, una hipótesis clínicamente plausible (el efecto del tratamiento hormonal podría diferir entre pacientes pre y posmenopáusicas).
+
+```{r modificacion-efecto}
+modelo_interaccion <- glm(cens ~ horTh * menostat + age + tsize + tgrade +
+                            pnodes + progrec + estrec,
+                          data = datos, family = binomial)
+summary(modelo_interaccion)$coefficients["horThyes:menostatPost", ]
+```
+
+El término de interacción no resulta estadísticamente significativo (p ≈ 0,43), por lo que no hay evidencia de que el estado menopáusico modifique el efecto de la terapia hormonal sobre la recaída. El efecto del tratamiento puede considerarse homogéneo entre ambos subgrupos.
+
+### Modelo final
+
+A partir de lo anterior, definimos el modelo final conservando la exposición de interés (`horTh`, que siempre se mantiene por ser el eje de la pregunta) junto con las covariables que resultaron significativas y con valor pronóstico relevante (`pnodes`, `progrec` y `tgrade`). Las variables no significativas que tampoco actuaban como confusoras (`age`, `tsize`, `estrec` y `menostat`) se excluyen en favor de la parsimonia.
+
+```{r modelo-final}
+modelo_final <- glm(cens ~ horTh + pnodes + progrec + tgrade,
+                    data = datos, family = binomial)
+round(exp(coef(modelo_final)), 3)
+round(exp(confint(modelo_final)), 3)
+
+AIC(modelo_saturado, modelo_final)
+```
+
+En el modelo final, el OR de `horTh` se mantiene en ≈ 0,70 (IC95 % 0,50–0,98), conservando su carácter protector y significativo. La estabilidad del efecto a lo largo de los tres modelos (crudo ≈ 0,71, saturado ≈ 0,65, final ≈ 0,70) refuerza la robustez del hallazgo. Además, el modelo final presenta un AIC levemente menor que el saturado, lo que respalda la decisión de retener un modelo más parsimonioso sin pérdida de ajuste. En síntesis, el análisis multivariado confirma que la terapia hormonal se asocia de manera independiente con una menor probabilidad de recaída, ajustando por los principales factores pronósticos.
 
 ```{=html}
 <!-- TODO: Modelo logístico saturado sobre cens, verificación de supuestos,
