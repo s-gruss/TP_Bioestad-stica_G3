@@ -2,7 +2,6 @@
 title: "Trabajo Práctico Integrador - Bioestadística (16.43)"
 subtitle: "Análisis del dataset GBSG2: cáncer de mama"
 author: "Santiago, Kiwi y Tobi"
-date: "`r format(Sys.Date(), '%d/%m/%Y')`"
 output:
   html_document:
     toc: true
@@ -24,10 +23,9 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ## Descripción del problema
 
-```{=html}
-<!-- TODO: Breve descripción del problema clínico. 
-     Cáncer de mama, factores pronósticos, relevancia del tema. -->
-```
+El cáncer de mama es uno de los tumores malignos más frecuentes en mujeres y una de las principales causas de mortalidad oncológica femenina. Su pronóstico depende de múltiples factores, entre ellos el tamaño tumoral, el grado histológico, el compromiso ganglionar y la expresión de receptores hormonales (estrógeno y progesterona).
+
+En tumores con receptores hormonales positivos, la terapia hormonal adyuvante constituye una estrategia terapéutica habitual, orientada a reducir el riesgo de recaída. Sin embargo, la magnitud de su beneficio puede variar según las características de cada paciente. Cuantificar la asociación entre la terapia hormonal y la recaída, considerando los factores pronósticos disponibles, resulta de interés clínico y constituye el eje del presente trabajo.
 
 ## Dataset y fuente
 
@@ -35,18 +33,38 @@ El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study G
 
 ## Objetivos
 
-<!-- TODO: Objetivo general y objetivos específicos. -->
+**Objetivo general**
+
+Evaluar la asociación entre la terapia hormonal y la probabilidad de recaída o muerte en pacientes con cáncer de mama primario, a partir del análisis del dataset GBSG2.
+
+**Objetivos específicos**
+
+-   Caracterizar la muestra mediante un análisis estadístico descriptivo de sus variables clínicas y demográficas.
+-   Analizar las diferencias en las variables explicatorias según la ocurrencia del evento (recaída/muerte).
+-   Construir un modelo de regresión logística que estime el efecto de la terapia hormonal sobre la probabilidad de recaída, ajustando por posibles factores de confusión.
+-   Identificar variables confusoras y modificadoras de efecto en la relación estudiada.
 
 ## Pregunta de investigación (PICO)
 
-```{=html}
-<!-- TODO: Completar el marco PICO.
-     P (Paciente/problema): pacientes con cáncer de mama
-     I (Intervención/exposición): terapia hormonal (horTh)
-     C (Comparación): ausencia de terapia hormonal
-     O (Outcome): recaída/evento (cens)
--->
-```
+La pregunta de investigación se estructura siguiendo el marco **PICO**:
+
+| Componente | Contenido |
+|------------------------------------|------------------------------------|
+| **P** (Paciente/problema) | Pacientes con cáncer de mama primario con ganglios positivos |
+| **I** (Intervención/exposición) | Recibir terapia hormonal (`horTh = yes`) |
+| **C** (Comparación) | No recibir terapia hormonal (`horTh = no`) |
+| **O** (Outcome) | Recaída o muerte durante el seguimiento (`cens = 1`) |
+
+**Pregunta de investigación:**
+
+> *En pacientes con cáncer de mama primario con ganglios positivos, ¿la terapia hormonal frente a su ausencia se asocia con una menor probabilidad de recaída o muerte durante el período de seguimiento?*
+
+**Hipótesis:**
+
+-   **H₁:** Las pacientes que reciben terapia hormonal presentan menor probabilidad de recaída/evento que las que no la reciben.
+-   **H₀:** No existe asociación entre la terapia hormonal y la probabilidad de recaída/evento.
+
+La pregunta cumple con los criterios **FINER**: es **F**actible (los datos estándisponibles y son suficientes), **I**nteresante y **R**elevante (la terapia hormonal es una decisión clínica concreta en cáncer de mama), éticamente correcta (**E**) (datos anonimizados y de acceso público) y **N**ovedosa en tanto reanálisis con fines formativos.
 
 ------------------------------------------------------------------------
 
@@ -209,9 +227,9 @@ En contraste, las variables **`tsize`, `pnodes`, `progrec` y `estrec`** presenta
 
 ## Diseño del estudio
 
-El presente trabajo corresponde a un **estudio observacional de cohorte retrospectivo**. Se analizan datos recopilados del *German Breast Cancer Study Group* (GBSG2), un registro multicéntrico alemán de pacientes con cáncer de mama primario. La exposición de interés es la recepción (o no) de terapia hormonal adyuvante (`horTh`), y el desenlace evaluado es la presencia de recaída o muerte durante el período de seguimiento (`cens`).
+El dataset GBSG2 proviene de un **ensayo clínico aleatorizado (ECA) multicéntrico** llevado a cabo por el *German Breast Cancer Study Group* (Schumacher et al., 1994). El estudio original tuvo un **diseño factorial 2×2** que evaluaba simultáneamente dos intervenciones en pacientes con cáncer de mama primario con ganglios positivos: la duración de la quimioterapia (tres versus seis ciclos de CMF) y la administración  o no de terapia hormonal adyuvante con tamoxifeno (`horTh`).
 
-Al tratarse de un diseño retrospectivo, los datos ya existían al momento del análisis: no se realizó ninguna asignación aleatoria de tratamientos ni intervención sobre las pacientes. Esto implica que los grupos comparados (con y sin terapia hormonal) pueden diferir en características basales, lo que debe ser considerado al interpretar las asociaciones encontradas.
+El presente trabajo constituye un **reanálisis** de esos datos, centrado en laasociación entre la terapia hormonal y la recaída o muerte durante el seguimiento (`cens`). Un aspecto clave del diseño es que **la terapia hormonal fue asignada de forma aleatorizada**. Esto fortalece el análisis: la aleatorización tiende a equilibrar las características basales entre los grupos con y sin hormonoterapia, reduciendo el riesgo de que la asociación observada se deba a diferencias sistemáticas previas entre las pacientes (confusión).
 
 ## Marco temporal
 
@@ -254,46 +272,82 @@ La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no re
 
 ## Variables
 
-```{=html}
-<!-- TODO: Identificar y clasificar cada variable según ROL (respuesta/explicatoria),
-     TIPO (continua/categórica/ordinal) y DISTRIBUCIÓN.
-     Responde a la Pregunta 3 de la matriz del final.
+Habiendo descrito y explorado las variables en la sección anterior, aquí se clasifican según su **rol en el análisis**, lo que determina la estrategia de modelado.
 
-     Referencia de las variables del GBSG2:
-     - horTh    : terapia hormonal (sí/no)      -> categórica
-     - age      : edad (años)                   -> continua
-     - menostat : estado menopáusico (pre/post) -> categórica
-     - tsize    : tamaño tumoral (mm)           -> continua
-     - tgrade   : grado tumoral (I/II/III)      -> categórica ordinal
-     - pnodes   : ganglios positivos            -> continua (conteo)
-     - progrec  : receptores progesterona       -> continua
-     - estrec   : receptores estrógeno          -> continua
-     - time     : tiempo libre de recaída (días)-> continua
-     - cens     : evento (1=recaída, 0=censura) -> VARIABLE RESPUESTA (binaria)
--->
-```
+| Rol en el análisis | Variable(s) |
+|------------------------------------|------------------------------------|
+| **Variable respuesta** | `cens` (evento: recaída/muerte) |
+| **Exposición principal** | `horTh` (terapia hormonal) |
+| **Covariables / factores pronósticos** | `age`, `menostat`, `tsize`, `tgrade`, `pnodes`, `progrec`, `estrec` |
+| **Variable temporal** (sección de supervivencia) | `time` |
+
+La **variable respuesta** es `cens`, de naturaleza binaria, lo que determina el uso de **regresión logística** como modelo principal. La **exposición de interés** es `horTh`, en torno a la cual se estructura la pregunta PICO, y que en el estudio original fue asignada de forma aleatorizada. El resto de las covariables son características basales de la paciente y del tumor; si bien la aleatorización de `horTh` reduce su rol confusor sobre la relación principal, se evalúan en el modelo multivariado por su valor pronóstico y para verificar el equilibrio entre grupos. La variable `time` no interviene en el modelo logístico, pero es central en la sección complementaria de supervivencia.
 
 ## Posibles sesgos
 
-```{=html}
-<!-- TODO: Sesgos de selección, confusión, pérdida de seguimiento.
-     Responde a la Pregunta 2 de la matriz del final. -->
-```
+Aunque el diseño aleatorizado del estudio protege la comparación principal, existen consideraciones de sesgo que conviene tener presentes al interpretar los resultados.
+
+**Confusión.** Gracias a la aleatorización de la terapia hormonal, el riesgo de 
+confusión sobre la relación principal (hormonoterapia → recaída) está 
+considerablemente reducido: se espera que las covariables basales (edad, estado 
+menopáusico, tamaño tumoral, etc.) se distribuyan de forma equilibrada entre los 
+grupos con y sin tratamiento. No obstante, dado que el modelo multivariado también 
+incorpora otras covariables pronósticas que **no** fueron aleatorizadas, la 
+evaluación de confusión y modificación de efecto sigue siendo pertinente para 
+esas variables.
+
+**Sesgo de selección.** La muestra proviene de centros oncológicos específicos de 
+Alemania (1984–1989) e incluye únicamente pacientes con ganglios positivos. Esto 
+limita la representatividad: los resultados podrían no extrapolarse directamente a 
+pacientes sin compromiso ganglionar, de otras regiones o de épocas con criterios 
+diagnósticos y terapéuticos distintos.
+
+**Sesgo de información / pérdida de seguimiento.** En estudios con seguimiento 
+temporal existe la posibilidad de que algunas pacientes abandonen o se pierdan 
+antes de completar la observación. En este dataset, esos casos se reflejan como 
+observaciones **censuradas** (`cens = 0`). Si la pérdida de seguimiento estuviera 
+relacionada con el pronóstico, podría introducir sesgo; el análisis asume que la 
+censura es no informativa (independiente del riesgo de recaída).
 
 ## Tamaño muestral y poder
 
-<!-- TODO: Cálculo del tamaño muestral ideal y poder de la muestra. -->
+El tamaño muestral de este trabajo está determinado por el estudio original: se analizan las 686 pacientes incluidas en el dataset GBSG2. Al tratarse de un reanálisis de datos preexistentes, no corresponde un cálculo de tamaño muestral a priori, sino valorar si la muestra disponible ofrece poder estadístico suficiente para el análisis propuesto.
+
+De hecho, el ensayo original fue dimensionado para detectar diferencias 
+clínicamente relevantes entre los grupos de tratamiento, por lo que la muestra parte de una base sólida. Para el análisis del presente trabajo, varias  condiciones resultan favorables:
+
+- **Tamaño amplio:** 686 observaciones es un número considerable para un modelo de regresión logística.
+- **Buen balance del desenlace:** 299 eventos (43,6 %) frente a 387 censuras (56,4 %). El balance entre ambas categorías de la variable respuesta favorece la estabilidad y el poder del modelo, a diferencia de lo que ocurriría con un evento muy raro.
+- **Regla práctica de eventos por variable (EPV):** una guía habitual en regresión logística sugiere disponer de al menos 10 eventos por cada variable predictora incluida en el modelo. Con 299 eventos, el modelo puede incorporar holgadamente las covariables disponibles sin riesgo de sobreajuste por este criterio.
+
+En conjunto, el tamaño y la composición de la muestra resultan adecuados para estimar con razonable precisión la asociación entre la terapia hormonal y la recaída.
+
 
 ## Métodos estadísticos
 
-```{=html}
-<!-- TODO: Describir los métodos a usar:
-     - Descriptiva: summary, stat.desc, histogramas, boxplots
-     - Normalidad: Shapiro-Wilk, Q-Q plot
-     - Univariado: t-test / Wilcoxon (continuas), chi² / Fisher (categóricas)
-     - Multivariado: regresión logística (glm, family = binomial), Odds Ratio
--->
-```
+El análisis se desarrolló en R (ver versión y paquetes en la sección de 
+información de la sesión) y se organizó en tres etapas.
+
+**Análisis descriptivo.** Se caracterizó la muestra mediante estadísticos de resumen (media, mediana, cuartiles, mínimo y máximo) para las variables continuas, y tablas de frecuencia absoluta y relativa para las categóricas. La normalidad de las variables continuas se evaluó combinando inspección visual (histogramas y  gráficos Q-Q) con el test de **Shapiro-Wilk**, interpretado con cautela dado eltamaño muestral.
+
+**Análisis univariado.** Se compararon las variables explicatorias entre los grupos definidos por el desenlace (`cens`). La elección de la prueba se basó en el tipo de variable y el cumplimiento del supuesto de normalidad:
+
+- Para variables continuas no normales (la mayoría), se utilizó la prueba no 
+paramétrica de **Wilcoxon-Mann-Whitney**.
+- Para variables continuas con distribución aproximadamente normal (como la edad), 
+se consideró el **test t de Student**.
+- Para variables categóricas, se utilizó la prueba de **chi-cuadrado** (o el test 
+exacto de **Fisher** cuando las frecuencias esperadas fueran bajas).
+
+**Análisis multivariado.** Se ajustó un modelo de **regresión logística** 
+(`glm` con `family = binomial`) para estimar el efecto de la terapia hormonal 
+sobre la probabilidad de recaída, considerando las covariables disponibles. Los 
+resultados se expresan como **Odds Ratios (OR)** con sus intervalos de confianza 
+del 95 %. Se evaluó la presencia de **confusión** y de **modificación de efecto** 
+(interacción) entre la exposición y las covariables.
+
+En todos los contrastes de hipótesis se adoptó un nivel de significación de 
+**α = 0,05**.
 
 ------------------------------------------------------------------------
 
@@ -323,9 +377,23 @@ La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no re
 
 ```{=html}
 <!-- =========================================================
-     SECCIÓN OPCIONAL (a evaluar al final): Análisis de supervivencia
-     Kaplan-Meier, Log-Rank y Cox usando time + cens.
-     Requiere las librerías survival y survminer.
+     SECCIÓN OPCIONAL (a desarrollar al final): Análisis de supervivencia
+     
+     Segunda PICO, con outcome temporal:
+       P: pacientes con cáncer de mama primario con ganglios positivos
+       I: recibir terapia hormonal (horTh = yes)
+       C: no recibir terapia hormonal (horTh = no)
+       O: TIEMPO hasta la recaída/muerte (time + cens)
+     
+     Pregunta: ¿la terapia hormonal se asocia con un MAYOR TIEMPO libre
+     de recaída respecto a no recibirla?
+     
+     Métodos: Kaplan-Meier (curvas de supervivencia), Log-Rank (comparación
+     de curvas) y regresión de Cox (Hazard Ratio).
+     Librerías: survival (ya se carga con TH.data) + survminer (falta instalar).
+     
+     Objetivo de cierre: comparar la dirección del Odds Ratio (logística)
+     con la del Hazard Ratio (Cox) para una conclusión más robusta.
      ========================================================= -->
 ```
 
