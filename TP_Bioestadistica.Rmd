@@ -31,22 +31,22 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ## Dataset y fuente
 
-El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study Group), incluido en el paquete `TH.data` de R. Contiene 686 pacientes con cáncer de mama y seguimiento temporal.
+El análisis se realiza sobre el dataset **GBSG2** (German Breast Cancer Study Group), incluido en el paquete `TH.data` de R. Contiene 686 pacientes con cáncer de mama y seguimiento temporal (M Schumacher, Oct. 1994)
+
 
 ## Objetivos
 
-<!-- TODO: Objetivo general y objetivos específicos. -->
+Se busca aplicar los conceptos estudiados durante el curso para diseñar una pregunta de investigación, y obtener información que aproxime a una respuesta en base a un análisis estadístico.
+
+
 
 ## Pregunta de investigación (PICO)
 
-```{=html}
-<!-- TODO: Completar el marco PICO.
-     P (Paciente/problema): pacientes con cáncer de mama
-     I (Intervención/exposición): terapia hormonal (horTh)
-     C (Comparación): ausencia de terapia hormonal
-     O (Outcome): recaída/evento (cens)
--->
-```
+Análisis de la pregunta de investigación bajo el concepto de PICO:
+Paciente o Problema: Pacientes femeninos con cancer de mama.
+Intervención: Terapia hormonal.
+Comparación: Ausencia de terapia hormonal.
+Outcome: Días de seguimiento del experimento y razón de su finalización (recaída, defunción o fin del estudio).
 
 ------------------------------------------------------------------------
 
@@ -254,6 +254,8 @@ La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no re
 
 ## Variables
 
+Kiwi: Hay que definir cuales variables son las que vamos a tomar como variables independientes y dependientes. Diría que indep son horTh, age, menostat, tsize, tgrade, pnodes. Dep solo time. El resto no sé bien qué son. 
+
 ```{=html}
 <!-- TODO: Identificar y clasificar cada variable según ROL (respuesta/explicatoria),
      TIPO (continua/categórica/ordinal) y DISTRIBUCIÓN.
@@ -274,7 +276,7 @@ La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no re
 ```
 
 ## Posibles sesgos
-
+Sesgo de selección: Cómo se define la condición de recaída, y qué tan unificado está el criterio de tomar dicha decisión entre los distintos médicos que participaron del experimento.
 ```{=html}
 <!-- TODO: Sesgos de selección, confusión, pérdida de seguimiento.
      Responde a la Pregunta 2 de la matriz del final. -->
@@ -341,6 +343,7 @@ La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no re
 ------------------------------------------------------------------------
 
 # Referencias bibliográficas
+
 
 ```{r citas, eval=FALSE}
 # Para citar R y los paquetes (muy importante según la clase del 12/5):
