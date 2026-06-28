@@ -60,6 +60,12 @@ En pacientes con cáncer de mama primario con ganglios positivos, ¿la terapia h
 -   **H₁:** Las pacientes que reciben terapia hormonal presentan menor probabilidad de recaída/evento que las que no la reciben.
 -   **H₀:** No existe asociación entre la terapia hormonal y la probabilidad de recaída/evento.
 
+## Enfoque del análisis
+
+El desenlace clínico de interés puede mirarse de dos formas complementarias: según la ocurrencia del evento (¿recae o no?) o según el tiempo hasta su ocurrencia (¿cuánto tarda en recaer?). El presente trabajo se centra en la primera, que constituye su análisis principal. La pregunta PICO planteada arriba se aborda mediante regresión logística sobre el desenlace binario `cens`.
+
+De forma complementaria, al final del trabajo se incluye una sección de análisis de supervivencia que retoma la misma exposición (`horTh`) desde la perspectiva temporal, con su propia pregunta y metodología (Kaplan-Meier y regresión de Cox).
+
 # Materiales y métodos
 
 ## Carga de librerías
