@@ -45,11 +45,11 @@ Evaluar la asociación entre la terapia hormonal y la probabilidad de recaída o
 La pregunta de investigación se estructura siguiendo el marco **PICO**:
 
 | Componente | Contenido |
-|----|----|
+|------------------------------------|------------------------------------|
 | **P** (Paciente/problema) | Pacientes con cáncer de mama primario con ganglios positivos |
 | **I** (Intervención/exposición) | Recibir terapia hormonal (`horTh = yes`) |
 | **C** (Comparación) | No recibir terapia hormonal (`horTh = no`) |
-| **O** (Outcome) | Recaída o muerte durante el seguimiento (`cens = 1`) |
+| **O** (Outcome) | Recaída o muerte durante el seguimiento (`cens = 1`) o finalización del estudo (`cens = 0`) |
 
 **Pregunta de investigación:**
 
@@ -57,8 +57,8 @@ En pacientes con cáncer de mama primario con ganglios positivos, ¿la terapia h
 
 **Hipótesis:**
 
--   **H₁:** Las pacientes que reciben terapia hormonal presentan menor probabilidad de recaída/evento que las que no la reciben.
--   **H₀:** No existe asociación entre la terapia hormonal y la probabilidad de recaída/evento.
+-   **Hipótesis Nula:** No existe asociación entre la terapia hormonal y la probabilidad de recaída/evento.
+-   **Hipótesis Alternativa:** Las pacientes que reciben terapia hormonal presentan menor probabilidad de recaída/evento que las que no la reciben.
 
 ## Enfoque del análisis
 
@@ -72,13 +72,15 @@ De forma complementaria, al final del trabajo se incluye una sección de anális
 
 ```{r librerias}
 # Es necesario instalar las siguientes librerías:
-#ainstall.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data"))
+#ainstall.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data", "kableExtra"))
 
 library(tidyverse)
 library(pastecs)
 library(corrplot)
 library(car)
 library(TH.data)
+library(knitr)
+library(kableExtra)
 ```
 
 ## Carga del dataset
@@ -221,7 +223,7 @@ En contraste, las variables `tsize`, `pnodes`, `progrec` y `estrec` presentan un
 
 **Variables categóricas.** La muestra incluye 440 pacientes sin terapia hormonal (64,1 %) y 246 con ella (35,9 %); 290 premenopáusicas (42,3 %) y 396 posmenopáusicas (57,7 %). El grado tumoral está dominado por el grado II (64,7 %), seguido del III (23,5 %) y el I (11,8 %). La variable respuesta `cens` muestra 387 observaciones censuradas (56,4 %) frente a 299 eventos (43,6 %).
 
-**Implicancia para el análisis.** Dado que la mayoría de las variables continuas no cumplen el supuesto de normalidad, en el análisis univariado se privilegiarán pruebas no paramétricas (test de Wilcoxon-Mann-Whitney) para comparar estas variables entre los grupos del outcome, reservando las pruebas paramétricas (test t) únicamente para los casos donde el supuesto sea razonable, como la edad.
+**Implicancia para el análisis.** Dado que la mayoría de las variables continuas no cumplen el supuesto de normalidad, en el análisis univariado se privilegiarán pruebas no paramétricas (test de Wilcoxon-Mann-Whitney) para comparar estas variables entre los grupos del outcome. Se podría considerar realizar pruebas paramétricas (test t) únicamente para la variable "edad", pero para mayor consistencia, el análisis será el mismo. En caso de que la potencia estadística del resultado sea considerada baja, se procederá con una prueba tipo t-student.
 
 ## Diseño del estudio
 
@@ -264,7 +266,7 @@ print(round(prop.table(table(datos$horTh)), 3))
 
 **Criterios de exclusión:**
 
--   El dataset original no documenta criterios de exclusión explícitos. Sin embargo, pacientes con datos faltantes en cualquier variable fueron excluidos en la etapa de control de calidad (ver sección de exploración). En este caso el dataset no presentó valores faltantes, por lo que no se excluyó ninguna observación.
+-   El dataset original no documenta criterios de exclusión explícitos. Sin embargo, pacientes con datos faltantes en cualquier variable fueron excluidos en la etapa de control de calidad. En este caso el dataset no presentó valores faltantes, por lo que no se excluyó ninguna observación.
 
 La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no recibieron terapia hormonal y 246 (35,9 %) sí la recibieron.
 
@@ -273,7 +275,7 @@ La muestra final consiste en **686 pacientes**, de las cuales 440 (64,1 %) no re
 Habiendo descrito y explorado las variables en la sección anterior, aquí se clasifican según su rol en el análisis, lo que determina la estrategia de modelado.
 
 | Rol en el análisis | Variable(s) |
-|----|----|
+|------------------------------------|------------------------------------|
 | **Variable respuesta** | `cens` (evento: recaída/muerte) |
 | **Exposición principal** | `horTh` (terapia hormonal) |
 | **Covariables / factores pronósticos** | `age`, `menostat`, `tsize`, `tgrade`, `pnodes`, `progrec`, `estrec` |
@@ -285,18 +287,15 @@ La **variable respuesta** es `cens`, de naturaleza binaria, lo que determina el 
 
 **Confusión.** Gracias a la aleatorización de la terapia hormonal, el riesgo de confusión sobre la relación principal (hormonoterapia → recaída) está considerablemente reducido: se espera que las covariables basales (edad, estado menopáusico, tamaño tumoral, etc.) se distribuyan de forma equilibrada entre los grupos con y sin tratamiento. No obstante, dado que el modelo multivariado también incorpora otras covariables pronósticas que no fueron aleatorizadas, la evaluación de confusión y modificación de efecto sigue siendo pertinente para esas variables.
 
-**Sesgo de selección.** La muestra proviene de centros oncológicos específicos de Alemania (1984–1989) e incluye únicamente pacientes con ganglios positivos. Esto limita la representatividad: los resultados podrían no extrapolarse directamente a pacientes sin compromiso ganglionar, de otras regiones o de épocas con criterios diagnósticos y terapéuticos distintos.
-
-**Sesgo de información / pérdida de seguimiento.** En estudios con seguimiento temporal existe la posibilidad de que algunas pacientes abandonen o se pierdan antes de completar la observación. En este dataset, esos casos se reflejan como observaciones censuradas (`cens = 0`). Si la pérdida de seguimiento estuviera relacionada con el pronóstico, podría introducir sesgo; el análisis asume que la censura es no informativa (independiente del riesgo de recaída).
+**Sesgo de selección.** La muestra proviene de centros oncológicos específicos de Alemania (1984–1989). Esto limita la representatividad: los resultados podrían no extrapolarse directamente para otras regiones o épocas con criterios diagnósticos y terapéuticos distintos. Adicionalmente, los profesionales responsables de definir cada variable tienen su propio criterio, y puede ser muy distinto en comparación al del resto.
 
 ## Tamaño muestral y poder
 
 El tamaño muestral de este trabajo está determinado por el estudio original: se analizan las 686 pacientes incluidas en el dataset GBSG2. Al tratarse de un reanálisis de datos preexistentes, no corresponde un cálculo de tamaño muestral a priori, sino valorar si la muestra disponible ofrece poder estadístico suficiente para el análisis propuesto.
 
-De hecho, el ensayo original fue dimensionado para detectar diferencias clínicamente relevantes entre los grupos de tratamiento, por lo que la muestra parte de una base sólida. Para el análisis del presente trabajo, varias condiciones resultan favorables:
+De hecho, el ensayo original fue dimensionado para detectar diferencias clínicamente relevantes entre los grupos de tratamiento, por lo que la muestra parte de una base sólida. Para el análisis del presente trabajo, las siguientes condiciones resultan favorables:
 
 -   **Tamaño amplio:** 686 observaciones es un número considerable para un modelo de regresión logística.
--   **Buen balance del desenlace:** 299 eventos (43,6 %) frente a 387 censuras (56,4 %). El balance entre ambas categorías de la variable respuesta favorece la estabilidad y el poder del modelo, a diferencia de lo que ocurriría con un evento muy raro.
 -   **Regla práctica de eventos por variable (EPV):** una guía habitual en regresión logística sugiere disponer de al menos 10 eventos por cada variable predictora incluida en el modelo. Con 299 eventos, el modelo puede incorporar holgadamente las covariables disponibles sin riesgo de sobreajuste por este criterio.
 
 En conjunto, el tamaño y la composición de la muestra resultan adecuados para estimar con razonable precisión la asociación entre la terapia hormonal y la recaída.
@@ -325,12 +324,22 @@ Como paso previo al análisis univariado, se resumen las variables continuas seg
 datos %>%
   group_by(cens) %>%
   summarise(
-    n              = n(),
-    edad_md        = median(age),
-    tsize_md       = median(tsize),
-    pnodes_md      = median(pnodes),
-    progrec_md     = median(progrec),
-    estrec_md      = median(estrec)
+    n          = n(),
+    edad_md    = median(age),
+    tsize_md   = median(tsize),
+    pnodes_md  = median(pnodes),
+    progrec_md = median(progrec),
+    estrec_md  = median(estrec)
+  ) %>%
+  kable(
+    caption = "Comparación de variables continuas según outcome",
+    digits  = 1,
+    col.names = c("Outcome", "N", "Edad", "T. tumor", "N. nodos", "Progesterona", "Estrógeno")
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width        = FALSE,
+    font_size         = 14
   )
 ```
 
@@ -353,9 +362,9 @@ chisq.test(table(datos$menostat, datos$cens))
 chisq.test(table(datos$tgrade, datos$cens))
 ```
 
-**Variables continuas.** Se hallaron diferencias estadísticamente significativas entre los grupos con y sin evento para el número de ganglios positivos (`pnodes`, p \< 0,001), los receptores de progesterona (`progrec`, p \< 0,001), los receptores de estrógeno (`estrec`, p = 0,001) y el tamaño tumoral (`tsize`, p = 0,002). El sentido es clínicamente coherente: las pacientes que recayeron presentaron más ganglios comprometidos y menores niveles de receptores hormonales. En cambio, la edad (`age`, p = 0,686) no mostró asociación con el desenlace.
+**Variables continuas.** Se hallaron diferencias estadísticamente significativas entre los grupos con y sin evento para el número de ganglios positivos (`pnodes`, p \< 0,001), los receptores de progesterona (`progrec`, p \< 0,001), los receptores de estrógeno (`estrec`, p = 0,001) y el tamaño tumoral (`tsize`, p = 0,002). El sentido es clínicamente coherente: las pacientes que recayeron presentaron más ganglios comprometidos y menores niveles de receptores hormonales. En cambio, la edad (`age`, p = 0,686) no mostró asociación con el desenlace, ni necesidad de reanalizarlo mediante pruebas paramétricas.
 
-**Variables categóricas.** El grado tumoral (`tgrade`, p \< 0,001) mostró una fuerte asociación con la recaída. La terapia hormonal (`horTh`, p = 0,041) también resultó significativa, lo que constituye una primera evidencia a favor de una asociación entre el tratamiento y el desenlace. El estado menopáusico (`menostat`, p = 0,282) no mostró asociación significativa.
+**Variables categóricas.** Como era de esperar, el grado tumoral (`tgrade`, p \< 0,001) mostró una fuerte asociación con la recaída. El estado menopáusico (`menostat`, p = 0,282) no mostró asociación significativa. Por último, la terapia hormonal (`horTh`, p = 0,041) también resultó significativa, lo que constituye una primera evidencia a favor de una asociación entre el tratamiento y el desenlace. Sin embargo, el criterio para considerarlo significativo fue establecido por los mismos autores del análisis, y el valor p obtenido es del mismo orden de magnitud que el nivel de significancia establecido, por lo que, resulta significativa ante el criterio tomado, pero una pequeña modificación de dicho criterio implicaría una conclusión diferente.
 
 En conclusión, el análisis univariado identifica como variables asociadas al desenlace a `pnodes`, `progrec`, `estrec`, `tsize`, `tgrade` y `horTh`. Estas son candidatas naturales a integrar el modelo multivariado. No obstante, estas asociaciones son crudas y no controlan el efecto de las demás variables; el modelo de regresión logística permitirá estimar el efecto ajustado de la terapia hormonal y evaluar la presencia de confusión.
 
@@ -442,13 +451,7 @@ round(exp(confint(modelo_final)), 3)
 AIC(modelo_saturado, modelo_final)
 ```
 
-En el modelo final, el OR de `horTh` se mantiene en ≈ 0,70 (IC95 % 0,50–0,98), conservando su carácter protector y significativo. La estabilidad del efecto a lo largo de los tres modelos (crudo ≈ 0,71, saturado ≈ 0,65, final ≈ 0,70) refuerza la robustez del hallazgo. Además, el modelo final presenta un AIC levemente menor que el saturado, lo que respalda la decisión de retener un modelo más parsimonioso sin pérdida de ajuste. En síntesis, el análisis multivariado confirma que la terapia hormonal se asocia de manera independiente con una menor probabilidad de recaída, ajustando por los principales factores pronósticos.
-
-```{=html}
-<!-- TODO: Modelo logístico saturado sobre cens, verificación de supuestos,
-     variables dummy, Odds Ratio, interpretación.
-     Responde a las Preguntas 5 y 6 de la matriz del final. -->
-```
+En el modelo final, el OR de `horTh` se mantiene en ≈ 0,70 (IC95 % 0,50–0,98), conservando su carácter protector y significativo. La estabilidad del efecto a lo largo de los tres modelos (crudo ≈ 0,71, saturado ≈ 0,65, final ≈ 0,70) refuerza la robustez del hallazgo. Además, el modelo final presenta un Criterio de Información de Akaike (AIC) levemente menor que el saturado, lo que respalda la decisión de retener un modelo más parsimonioso sin pérdida de ajuste. En síntesis, el análisis multivariado confirma que la terapia hormonal se asocia de manera independiente con una menor probabilidad de recaída, ajustando por los principales factores pronósticos.
 
 ```{=html}
 <!-- =========================================================
