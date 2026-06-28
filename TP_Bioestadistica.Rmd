@@ -349,7 +349,6 @@ Para evaluar la asociación entre cada variable explicatoria y el desenlace (`ce
 
 ```{r univariado-wilcoxon}
 # Wilcoxon-Mann-Whitney: compara cada continua entre los grupos de cens
-# (no paramétrico, elegido por la no-normalidad ya demostrada)
 wilcox.test(age ~ cens,     data = datos)
 wilcox.test(tsize ~ cens,   data = datos)
 wilcox.test(pnodes ~ cens,  data = datos)
@@ -547,7 +546,7 @@ citation("tidyverse")
 version$version.string
 ```
 
-<!-- TODO: Listar referencias del dataset, paquetes y bibliografía consultada. -->
+
 
 ## Información de la sesión
 
