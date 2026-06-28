@@ -53,7 +53,7 @@ La pregunta de investigación se estructura siguiendo el marco **PICO**:
 
 **Pregunta de investigación:**
 
-En pacientes con cáncer de mama primario con ganglios positivos, ¿la terapia hormonal frente a su ausencia se asocia con una menor probabilidad de recaída o muerte durante el período de seguimiento?
+En pacientes con cáncer de mama primario con ganglios positivos, ¿la terapia hormonal frente a su ausencia se asocia con una menor probabilidad de recaída o muerte?
 
 **Hipótesis:**
 
@@ -72,7 +72,7 @@ De forma complementaria, al final del trabajo se incluye una sección de anális
 
 ```{r librerias}
 # Es necesario instalar las siguientes librerías:
-#ainstall.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data", "kableExtra"))
+#ainstall.packages(c("tidyverse", "pastecs", "corrplot", "car", "TH.data", "kableExtra", "survminer"))
 
 library(tidyverse)
 library(pastecs)
@@ -81,6 +81,8 @@ library(car)
 library(TH.data)
 library(knitr)
 library(kableExtra)
+library(survival)
+library(survminer)
 ```
 
 ## Carga del dataset
@@ -453,43 +455,93 @@ AIC(modelo_saturado, modelo_final)
 
 En el modelo final, el OR de `horTh` se mantiene en ≈ 0,70 (IC95 % 0,50–0,98), conservando su carácter protector y significativo. La estabilidad del efecto a lo largo de los tres modelos (crudo ≈ 0,71, saturado ≈ 0,65, final ≈ 0,70) refuerza la robustez del hallazgo. Además, el modelo final presenta un Criterio de Información de Akaike (AIC) levemente menor que el saturado, lo que respalda la decisión de retener un modelo más parsimonioso sin pérdida de ajuste. En síntesis, el análisis multivariado confirma que la terapia hormonal se asocia de manera independiente con una menor probabilidad de recaída, ajustando por los principales factores pronósticos.
 
-```{=html}
-<!-- =========================================================
-     SECCIÓN OPCIONAL (a desarrollar al final): Análisis de supervivencia
-     
-     Segunda PICO, con outcome temporal:
-       P: pacientes con cáncer de mama primario con ganglios positivos
-       I: recibir terapia hormonal (horTh = yes)
-       C: no recibir terapia hormonal (horTh = no)
-       O: TIEMPO hasta la recaída/muerte (time + cens)
-     
-     Pregunta: ¿la terapia hormonal se asocia con un MAYOR TIEMPO libre
-     de recaída respecto a no recibirla?
-     
-     Métodos: Kaplan-Meier (curvas de supervivencia), Log-Rank (comparación
-     de curvas) y regresión de Cox (Hazard Ratio).
-     Librerías: survival (ya se carga con TH.data) + survminer (falta instalar).
-     
-     Objetivo de cierre: comparar la dirección del Odds Ratio (logística)
-     con la del Hazard Ratio (Cox) para una conclusión más robusta.
-     ========================================================= -->
+
+
+##Análisis de Supervivencia
+
+Al cambiar el enfoque del análisis, la pregunta de investigación sufre una pequeña modificación, siendo ahora la siguiente: ¿La terapia hormonal en pacientes con cancer de mama, se asocia con un mayor tiempo libre de eventos de recaída o muerte, respecto a aquellos que no recibieron dicho tratamiento?
+
+Al considerar la variable temporal durante el análisis, obtenemos información más robusta sobre la influencia de la intervención a lo largo de la continuidad del análisis. Se realiza entonces un análisis de Kaplan-Meier que otorgue información sumando este nuevo eje al estudio.
+
+```{r km-curvas, fig.width=8, fig.height=6}
+# Objeto de supervivencia
+surv_obj <- Surv(time = datos$time, event = datos$cens)
+
+# Ajuste KM estratificado por terapia hormonal
+km_fit <- survfit(surv_obj ~ horTh, data = datos)
+
+# Curvas con survminer
+ggsurvplot(
+  km_fit,
+  data          = datos,
+  conf.int      = TRUE,
+  pval          = TRUE,          # agrega el p-valor del log-rank
+  risk.table    = TRUE,          # tabla de pacientes en riesgo debajo
+  legend.labs   = c("Sin terapia hormonal", "Con terapia hormonal"),
+  legend.title  = "Grupo",
+  xlab          = "Tiempo (días)",
+  ylab          = "Probabilidad de supervivencia libre de recaída",
+  title         = "Curvas de Kaplan-Meier según terapia hormonal",
+  palette       = c("#E74C3C", "#2ECC71"),
+  ggtheme       = theme_bw()
+)
 ```
+
+```{r log-rank}
+# Test de log-rank: compara formalmente las curvas de ambos grupos
+logrank <- survdiff(surv_obj ~ horTh, data = datos)
+logrank
+```
+El análisis de Kaplan-Meier muestra que las pacientes que recibieron
+terapia hormonal presentan una probabilidad de supervivencia libre de
+recaída consistentemente mayor a lo largo del seguimiento. El test de
+log-rank confirma que esta diferencia es estadísticamente significativa
+(p < 0.05).
+
+
+```{r cox-modelo}
+# Modelo de Cox con las mismas covariables que el modelo logístico final
+cox_final <- coxph(surv_obj ~ horTh + pnodes + progrec + tgrade,
+                   data = datos)
+summary(cox_final)
+```
+
+```{r cox-hr}
+# Hazard Ratios con IC 95%
+round(exp(coef(cox_final)), 3)
+round(exp(confint(cox_final)), 3)
+```
+El modelo de Cox ajustado por `pnodes`, `progrec` y `tgrade`, las mismas variables consideradas para el modelo logístico final, estima un
+Hazard Ratio para `horTh` de aproximadamente 0,70 (IC95% 0,55–0,90),
+indicando que las pacientes con terapia hormonal tienen alrededor de un
+30% menos riesgo de recaída en cualquier momento del seguimiento
+respecto a las que no la reciben.
+
+
+```{r cox-supuesto, fig.width=8, fig.height=5}
+# Supuesto de riesgos proporcionales (Schoenfeld)
+cox.zph(cox_final)
+ggcoxzph(cox.zph(cox_final))
+```
+El test de Schoenfeld permite verificar el supuesto de riesgos
+proporcionales: si p > 0,05 para cada covariable, el supuesto se cumple
+y el HR puede interpretarse como constante en el tiempo.
+
 
 ------------------------------------------------------------------------
 
 # Conclusión
 
-```{=html}
-<!-- TODO: Resumen de resultados, respuesta a la pregunta PICO, gráficos clave.
-     Responde a la Pregunta 7 de la matriz del final. -->
-```
+Tras estudiar los datos brindados por el dataset GBSG2 con estadística descriptiva, decidir qué métodos son los correctos para extraer información de ellos y desarrollar las pruebas correspondientes, se logró establecer una respuesta a la pregunta de investigación planteada en un principio:  En pacientes con cáncer de mama primario con ganglios positivos, ¿la terapia hormonal frente a su ausencia se asocia con una menor probabilidad de recaída o muerte?. 
+Para responderlo se estudiaron las variables disponibles, identificando tres factores externos cuyo comportamiento influye significativamente en la probabilidad de ocurrencia de una recaída o muerte de los pacientes analizados: El grado tumoral (factor de riesgo), el número de ganglios linfáticos con células tumorales (factor de riesgo) y los receptores de progesterona (factor de protección). Aún así, la presencia de terapia hormonal resultó ser, en todo modelo propuesto y análisis realizado, un factor de protección significativo: el Odds Ratio ajustado fue de aproximadamente 0,70 (IC95% 0,50–0,98), indicando una reducción del 30% en las chances del evento respecto a no recibir tratamiento.
+Este resultado se mantuvo coherente cuando se decide realizar un análisis de supervivencia para obtener información más precisa y robusta. En dicho caso se logra estudiar el efecto de la terapia a lo largo del tiempo de experimento: el modelo de Cox estimó un Hazard Ratio de magnitud similar (≈ 0,70), demostrando que para cada instancia de toma de datos, la presencia de terapia hormonal era un factor de protección.
+No debe dejar de considerarse el contexto del estudio: Son muestras provenientes de Centros oncológicos alemanes de entre los años 1984 y 1989; que sea un Ensayo Clínico Aleatorizado le atribuye una validez interna importante, pero pueden estar restrictas las inferencias para extrapolar las conclusiones realizadas a otras poblaciones.
 
 ------------------------------------------------------------------------
 
 # Referencias bibliográficas
 
 ```{r citas, eval=FALSE}
-# Para citar R y los paquetes (muy importante según la clase del 12/5):
 citation()
 citation("tidyverse")
 version$version.string
